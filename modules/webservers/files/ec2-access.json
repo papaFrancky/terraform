@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateRoute",
+        "ec2:ReplaceRoute",
+        "ec2:DescribeInstanceAttribute",
+        "ec2:DescribeRouteTables",
+        "ec2:ModifyInstanceAttribute",
+        "ec2:DescribeTags"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}
+
