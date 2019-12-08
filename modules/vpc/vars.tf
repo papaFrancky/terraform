@@ -1,3 +1,7 @@
+# modules/vpc/vars.tf
+# -------------------
+
+
 # INPUT VARIABLES
 # ---------------
 

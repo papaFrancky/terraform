@@ -1,7 +1,12 @@
+# modules/vpc/outputs.tf
+# ----------------------
+
+
 # OUTPUT VARIABLES
 # ----------------
 
-output "aws_region" {
+
+output "region" {
   value   = var.region
 }
 
