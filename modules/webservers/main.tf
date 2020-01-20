@@ -35,19 +35,27 @@ resource aws_launch_configuration webservers {
 # AUTO SCALING GROUP
 # ------------------
 
-data aws_availability_zones all {
+data aws_vpc "my_vpc" {
+  tags = {
+    Name = "${var.env}"
+  }
 }
 
+data aws_subnet_ids my_subnets {
+  vpc_id = data.aws_vpc.my_vpc.id
+}
+
+
 resource aws_autoscaling_group webservers {
-  name                      = "${var.env}-webservers"
-  launch_configuration      = aws_launch_configuration.webservers.id
-  availability_zones        = [ "data.aws_availability_zones.all.names" ]
+  name                  = "${var.env}-webservers"
+  launch_configuration  = aws_launch_configuration.webservers.id
+  #availability_zones    = data.aws_availability_zones.all.names
+  vpc_zone_identifier   = data.aws_subnet_ids.my_subnets.ids
+  load_balancers        = [ aws_elb.webservers.name ]
+  health_check_type     = "ELB"
 
-  load_balancers            = [ aws_elb.webservers.name ]
-  health_check_type         = "ELB"
-
-  min_size                  = var.nb_servers_min
-  max_size                  = var.nb_servers_max
+  min_size              = var.nb_servers_min
+  max_size              = var.nb_servers_max
 
   tag {
     key                 = "Name"
@@ -62,9 +70,9 @@ resource aws_autoscaling_group webservers {
 # -------------
 
 resource aws_elb webservers {
-  name                = "${var.env}-webservers"
-  availability_zones  = [ "data.aws_availability_zones.all.names" ]
-  security_groups     = [ aws_security_group.load-balancer.id ]
+  name            = "${var.env}-webservers"
+  subnets         = data.aws_subnet_ids.my_subnets.ids
+  security_groups = [ aws_security_group.load-balancer.id ]
 
   listener {
     lb_port           = var.http_port
@@ -106,12 +114,6 @@ data aws_ami amazon_latest {
 # SECURITY GROUPS
 # --------------
 
-data aws_vpc my_vpc {
-  tags = {
-    "Name" = "${var.env}"
-  }
-}
-
 resource aws_security_group load-balancer {
   name          = "load-balancer"
   description   = "Load-balancer security group"
@@ -122,6 +124,10 @@ resource aws_security_group load-balancer {
     to_port     = var.http_port
     protocol    = "tcp"
     cidr_blocks = [ "0.0.0.0/0" ]
+  }
+
+  tags = {
+    Name = "load-balancer"
   }
 }
 
@@ -166,6 +172,6 @@ resource aws_security_group webservers {
   }
 
    tags = {
-      "Name" = "webservers"
+      Name = "webservers"
   }
 }
