@@ -45,3 +45,15 @@ variable nb_servers_max {
   description = "Maximum number of servers managed by the auto-scaling group"
   type        = string
 }
+
+variable dns_zone_id {
+  description = "DNS hosted zone ID"
+  type        = string
+  default     = "Z12Y4ZPECZULO5"
+}
+
+variable dns_domain_name {
+  description = "DNS domain name"
+  type        = string
+  default     = "codeascode.net"
+}

@@ -24,7 +24,8 @@ getAnsibleCode () {
                         --query 'Reservations[].Instances[].Tags[?Key==`Name`].Value[]' \
                         --region=${awsRegion}                                           \
                         --output text )
-  aws s3 sync s3://demo-infra-s3-bucket/${instanceName} /install/. --region=${awsRegion}
+  ansibleCodeDir=$( echo ${instanceName} | sed 's/^\w\w\w-//' )
+  aws s3 sync s3://demo-infra-s3-bucket/${ansibleCodeDir} /install/. --region=${awsRegion}
 }
 
 

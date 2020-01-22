@@ -24,7 +24,6 @@ resource aws_launch_configuration webservers {
   key_name                    = var.ssh_key
   security_groups             = [ aws_security_group.webservers.id ]
   user_data                   = file("${path.module}/files/user-data.bash")
-
   lifecycle {
     create_before_destroy = true
   }
@@ -126,10 +125,18 @@ resource aws_security_group load-balancer {
     cidr_blocks = [ "0.0.0.0/0" ]
   }
 
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = {
     Name = "load-balancer"
   }
 }
+
 
 resource aws_security_group webservers {
   name          = "webservers"
@@ -174,4 +181,17 @@ resource aws_security_group webservers {
    tags = {
       Name = "webservers"
   }
+}
+
+
+
+# DNS ALIAS
+# ---------
+
+resource aws_route53_record webservers {
+  zone_id = var.dns_zone_id
+  name    = "www-${var.env}.${var.dns_domain_name}"
+  type    = "CNAME"
+  ttl     = "60"
+  records = [ aws_elb.webservers.dns_name ]
 }
