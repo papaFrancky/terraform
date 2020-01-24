@@ -49,4 +49,3 @@ resource aws_iam_role_policy s3-access {
   role      = aws_iam_role.webservers.id
   policy    = file("${path.module}/files/s3-access.json")
 }
-

@@ -48,7 +48,6 @@ data aws_subnet_ids my_subnets {
 resource aws_autoscaling_group webservers {
   name                  = "${var.env}-webservers"
   launch_configuration  = aws_launch_configuration.webservers.id
-  #availability_zones    = data.aws_availability_zones.all.names
   vpc_zone_identifier   = data.aws_subnet_ids.my_subnets.ids
   load_balancers        = [ aws_elb.webservers.name ]
   health_check_type     = "ELB"
@@ -189,9 +188,10 @@ resource aws_security_group webservers {
 # ---------
 
 resource aws_route53_record webservers {
-  zone_id = var.dns_zone_id
-  name    = "www-${var.env}.${var.dns_domain_name}"
-  type    = "CNAME"
-  ttl     = "60"
-  records = [ aws_elb.webservers.dns_name ]
+  allow_overwrite = true
+  zone_id         = var.dns_zone_id
+  name            = "www-${var.env}.${var.dns_domain_name}"
+  type            = "CNAME"
+  ttl             = "60"
+  records         = [ aws_elb.webservers.dns_name ]
 }

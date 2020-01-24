@@ -2,10 +2,6 @@
 # ----------------------
 
 
-# OUTPUT VARIABLES
-# ----------------
-
-
 output "region" {
   value   = var.region
 }
@@ -29,4 +25,3 @@ output "public_subnets_names" {
 output "public_cidrs" {
     value = aws_subnet.public.*.cidr_block
 }
-

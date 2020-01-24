@@ -9,6 +9,7 @@ module "vpc" {
 }
 
 
+
 # OUTPUT VARIABLES
 # ----------------
 
@@ -35,16 +36,3 @@ output "public_subnets_names" {
 output "public_cidrs" {
     value = module.vpc.public_cidrs
 }
-
-#output "private_subnets_ids" {
-#    value = module.vpc.private_subnets_ids
-#}
-
-#output "private_subnets_names" {
-#  value   = module.vpc.private_subnets_names
-#}
-
-#output "private_cidrs" {
-#    value = module.vpc.private_cidrs
-#}
-
