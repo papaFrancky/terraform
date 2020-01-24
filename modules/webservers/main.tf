@@ -44,12 +44,18 @@ data aws_subnet_ids my_subnets {
   vpc_id = data.aws_vpc.my_vpc.id
 }
 
+data aws_lb_target_group webservers {
+  tags = {
+    Name = "${var.env}-webservers"
+  }
+}
 
 resource aws_autoscaling_group webservers {
   name                  = "${var.env}-webservers"
   launch_configuration  = aws_launch_configuration.webservers.id
   vpc_zone_identifier   = data.aws_subnet_ids.my_subnets.ids
   load_balancers        = [ aws_elb.webservers.name ]
+  target_group_arns     = [ data.aws_lb_target_group.webservers.arn ]
   health_check_type     = "ELB"
 
   min_size              = var.nb_servers_min
@@ -67,26 +73,54 @@ resource aws_autoscaling_group webservers {
 # LOAD-BALANCER
 # -------------
 
-resource aws_elb webservers {
-  name            = "${var.env}-webservers"
-  subnets         = data.aws_subnet_ids.my_subnets.ids
-  security_groups = [ aws_security_group.load-balancer.id ]
+resource "aws_lb" "my_lb" {
+  name               = "${var.env}-load-balancer"
+  internal           = false
+  load_balancer_type = "network"
+  subnets            = data.aws_subnet_ids.my_subnets.ids
 
-  listener {
-    lb_port           = var.http_port
-    lb_protocol       = "http"
-    instance_port     = var.http_port
-    instance_protocol = "http"
-  }
+  enable_deletion_protection = true
 
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    interval            = 30
-    target              = "HTTP:${var.http_port}/"
+  tags = {
+    Name = "${var.env}-load-balancer"
+    env  = var.env
   }
 }
+
+
+resource "aws_lb_listener" "my_lb_listener" {
+  load_balancer_arn       = aws_lb.my_lb.arn
+  for_each = var.forwarding_config
+      port                = each.key
+      protocol            = each.value
+      default_action {
+        target_group_arn = "${aws_lb_target_group.tg[each.key].arn}"
+        type             = "forward"
+      }
+}
+
+
+
+#resource aws_elb webservers {
+#  name            = "${var.env}-webservers"
+#  subnets         = data.aws_subnet_ids.my_subnets.ids
+#  security_groups = [ aws_security_group.load-balancer.id ]
+#
+#  listener {
+#    lb_port           = var.http_port
+#    lb_protocol       = "http"
+#    instance_port     = var.http_port
+#    instance_protocol = "http"
+#  }
+#
+#  health_check {
+#    healthy_threshold   = 2
+#    unhealthy_threshold = 2
+#    timeout             = 3
+#    interval            = 30
+#    target              = "HTTP:${var.http_port}/"
+#  }
+#}
 
 
 # LATEST AMAZON LINUX AMI

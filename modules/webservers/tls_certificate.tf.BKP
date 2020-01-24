@@ -1,0 +1,12 @@
+resource "aws_acm_certificate" "tls_cert" {
+  domain_name       = "${var.env}.${var.dns_domain_name}"
+  validation_method = "DNS"
+
+  tags = {
+    Name = "${var.env}.${var.dns_domain_name}"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
