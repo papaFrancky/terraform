@@ -1,15 +1,13 @@
 # modules/load-balancer/main.tf
 
 
-# CLOUD PROVIDER
-# --------------
-
+# cloud provider
 provider aws {
   region      = var.region
 }
 
 
-# retrieve VPC [dev|tst|acc|prd] info
+# vpc [dev|tst|acc|prd] info
 data aws_vpc "my_vpc" {
   tags = {
     Name = "${var.env}"
@@ -17,30 +15,18 @@ data aws_vpc "my_vpc" {
 }
 
 
-# retrieve VPC subnets info
+# vpc subnets info
 data aws_subnet_ids my_subnets {
   vpc_id = data.aws_vpc.my_vpc.id
 }
 
 
-## create a network load-balancer
-#resource aws_lb load_balancer {
-#  name               = var.env
-#  internal           = false
-#  ip_address_type    = "ipv4"
-#  load_balancer_type = "network"
-#  subnets            = data.aws_subnet_ids.my_subnets.ids
-#  tags = {
-#    Name = "${var.env}-load-balancer"
-#    env  = var.env
-#  }
-#}
-
-# create a network load-balancer
+# application load-balancer
 resource aws_lb my_load_balancer {
   name               = var.env
   internal           = false
   load_balancer_type = "application"
+  security_groups    = [ aws_security_group.load-balancer.id ]
   ip_address_type    = "ipv4"
   subnets            = data.aws_subnet_ids.my_subnets.ids
   
@@ -50,7 +36,40 @@ resource aws_lb my_load_balancer {
 }
 
 
-# create a load-balancer listener for http/80 input traffic
+# application load-balancer security group
+ resource aws_security_group load-balancer {
+  name          = "load-balancer"
+  description   = "Load-balancer security group"
+  vpc_id        = data.aws_vpc.my_vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [ "0.0.0.0/0" ]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [ "0.0.0.0/0" ]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "load-balancer"
+  }
+}
+
+
+# load-balancer listener for http/80 input traffic
 resource aws_lb_listener http-80 {
   load_balancer_arn = aws_lb.my_load_balancer.arn
   protocol          = "HTTP"
@@ -67,7 +86,7 @@ resource aws_lb_listener http-80 {
 }
 
 
-# create a load-balancer listener for https/443 input traffic
+# load-balancer listener for https/443 input traffic
 resource aws_lb_listener https-443 {
   load_balancer_arn = aws_lb.my_load_balancer.arn
   protocol          = "HTTPS"
@@ -77,12 +96,12 @@ resource aws_lb_listener https-443 {
   certificate_arn   = var.tls_certificate_arn
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.http-80.arn
+    target_group_arn = aws_lb_target_group.webservers.arn
   }
 }
 
 
-# create a load-balancer target group for the webservers
+# load-balancer target group corresponding to the webservers
 resource aws_lb_target_group webservers {
   name        = "webservers"
   port        = 80

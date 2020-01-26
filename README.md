@@ -18,6 +18,10 @@ terraform code that provides a VPC and an auto scaling group for a simple web si
 - readme (pas complet du tout)
 - page html : renvoie dans l'onglet l'ip du serveur. devrait renvoyer www-{env}
 - prod : créer un alias dns www.domain au lieu de www-prd.domain
-- load-balancer : passer à un mode plus récent
-- https
+- notifications SNS
+- créer une machine <env>-bastion et modifier les security groups des webservers pour que cette machine puisse y accéder en SSH et en HTTP pas besoin de HTTPS, on passera par la VIP).
+- reprendre la grosse image et redéfinir ce que l'on souhaite exactement :
+  * webserver : pas de mise à jour DNS
+  * pas besoin de nom DNS depuis le vpc
+
 
