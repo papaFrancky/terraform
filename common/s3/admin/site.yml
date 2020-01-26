@@ -1,0 +1,62 @@
+---
+
+- hosts:         localhost
+  become:        yes
+  become_user:   root
+  become_method: sudo
+
+  vars:
+    dns_domain_name: "codeascode.net"
+    dns_ttl:         60
+
+  tasks:
+
+
+  - name: retrieve ec2 instance metadata (facts)
+    ec2_metadata_facts:
+
+  - debug:
+      msg: "ansible_ec2_placement_region = {{ ansible_ec2_placement_region }}"
+
+  - debug:
+      msg: "ansible_ec2_public_ipv4      = {{ ansible_ec2_public_ipv4 }}"
+  
+  - debug:
+      msg: "ansible_ec2_instance_id      = {{ ansible_ec2_instance_id }}"
+
+
+  - name: get ec2 tags for this instance
+    local_action:
+      module:   ec2_tag
+      region:   "{{ ansible_ec2_placement_region }}"
+      resource: "{{ ansible_ec2_instance_id }}"
+      state:    list
+    register: ec2_tags
+
+  - debug:
+      msg: "tag Name = {{ ec2_tags.tags.Name}}"
+
+
+  - name: update dns entry
+    route53:
+      state:     present
+      ttl:       "{{ dns_ttl }}"
+      zone:      "{{ dns_domain_name }}"
+      record:    "{{ ec2_tags.tags.Name}}.{{ dns_domain_name }}"
+      type:      A
+      value:     "{{ ansible_ec2_public_ipv4 }}"
+      overwrite: yes
+      wait:      no
+
+
+  - name: full update
+    yum:
+      name:  '*'
+      state: latest
+
+
+  - name: exec user-data everytime at boot
+    replace:
+      path:    /etc/cloud/cloud.cfg
+      regexp:  '^ - scripts-user$'
+      replace: ' - [scripts-user, always]'
