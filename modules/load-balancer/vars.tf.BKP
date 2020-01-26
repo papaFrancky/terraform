@@ -1,0 +1,37 @@
+# modules/load-balancer/vars.tf
+
+
+variable "load_balancer_config" {
+  description = "Load-balancer configuration"
+  type        = map    
+  default     = {
+    name       = "${var.env}-load-balancer"
+    internal   = "false"
+    env        = var.env
+    subnet     = <subnet_id>
+    nlb_vpc_id = <vpc_id>
+  }
+}
+
+
+variable "target_group_config" {
+  description = "Target group configuration"
+  type        = map
+  default     = {
+    name                  = "test-nlb-tg"
+    target_type           = "instance"
+    health_check_protocol = "TCP"
+    tg_vpc_id             = <tg_creation_vpc_id>
+    target_id1            = <one of instance_id/ip/arn>
+  }
+}
+
+
+variable "forwarding_config" {
+  description = "Forwarding configuration"
+  type        = map
+  default     = {
+      80  = "TCP"
+      443 = "TCP" # and so on
+  }
+}

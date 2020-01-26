@@ -2,7 +2,7 @@
 
 
 ####################  FUNCTIONS & VARS  ####################
-
+s3Bucket="demo-infra-s3-bucket"
 awsRegion=$(    curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone/ | sed 's/[a-z]$//' )
 instanceId=$(   curl -s http://169.254.169.254/latest/meta-data/instance-id )
 
@@ -25,7 +25,7 @@ getAnsibleCode () {
                         --region=${awsRegion}                                           \
                         --output text )
   ansibleCodeDir=$( echo ${instanceName} | sed 's/^\w\w\w-//' )
-  aws s3 sync s3://demo-infra-s3-bucket/${ansibleCodeDir} /install/. --region=${awsRegion}
+  aws s3 sync s3://${s3Bucket}/${ansibleCodeDir} /install/. --region=${awsRegion}
 }
 
 

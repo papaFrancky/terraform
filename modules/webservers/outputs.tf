@@ -3,10 +3,10 @@
 
 
 output elb_dns_native_name {
-  value = aws_elb.webservers.dns_name
+  value = data.aws_lb.my_load_balancer.dns_name
 
   depends_on = [
-    aws_elb.webservers
+    aws_lb.my_load_balancer
   ]
 }
 
@@ -17,9 +17,9 @@ output elb_dns_alias {
 
 
 output elb_instances {
-  value = aws_elb.webservers.instances
+  value = data.aws_lb.my_load_balancer.name
 
   depends_on = [
-    aws_elb.webservers
+    aws_lb.my_load_balancer
   ]
 }

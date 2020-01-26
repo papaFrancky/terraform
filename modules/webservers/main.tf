@@ -44,12 +44,19 @@ data aws_subnet_ids my_subnets {
   vpc_id = data.aws_vpc.my_vpc.id
 }
 
+data aws_lb_target_group webservers {
+  name = "webservers"
+}
+
+data aws_lb my_load_balancer {
+  name = var.env
+}
 
 resource aws_autoscaling_group webservers {
   name                  = "${var.env}-webservers"
   launch_configuration  = aws_launch_configuration.webservers.id
   vpc_zone_identifier   = data.aws_subnet_ids.my_subnets.ids
-  load_balancers        = [ aws_elb.webservers.name ]
+  target_group_arns     = [ data.aws_lb_target_group.webservers.arn ]
   health_check_type     = "ELB"
 
   min_size              = var.nb_servers_min
@@ -62,31 +69,6 @@ resource aws_autoscaling_group webservers {
   }
 }
 
-
-
-# LOAD-BALANCER
-# -------------
-
-resource aws_elb webservers {
-  name            = "${var.env}-webservers"
-  subnets         = data.aws_subnet_ids.my_subnets.ids
-  security_groups = [ aws_security_group.load-balancer.id ]
-
-  listener {
-    lb_port           = var.http_port
-    lb_protocol       = "http"
-    instance_port     = var.http_port
-    instance_protocol = "http"
-  }
-
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    interval            = 30
-    target              = "HTTP:${var.http_port}/"
-  }
-}
 
 
 # LATEST AMAZON LINUX AMI
@@ -110,37 +92,33 @@ data aws_ami amazon_latest {
 
 
 # SECURITY GROUPS
-# --------------
+# ---------------
 
-resource aws_security_group load-balancer {
-  name          = "load-balancer"
-  description   = "Load-balancer security group"
-  vpc_id        = data.aws_vpc.my_vpc.id
-
-  ingress {
-    from_port   = var.http_port
-    to_port     = var.http_port
-    protocol    = "tcp"
-    cidr_blocks = [ "0.0.0.0/0" ]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "load-balancer"
-  }
+data aws_security_group load-balancer {
+  name = "load-balancer"
 }
-
 
 resource aws_security_group webservers {
   name          = "webservers"
   description   = "Web servers security group"
   vpc_id        = data.aws_vpc.my_vpc.id
+  
+  ingress {
+    description = "HTTP from load-balancer"
+    protocol    = "tcp"
+    from_port   = 80
+    to_port     = 80
+    security_groups = [ data.aws_security_group.load-balancer.id ]
+  }
+
+  ingress {
+    description = "HTTPs from load-balancer"
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 443
+    security_groups = [ data.aws_security_group.load-balancer.id ]
+  }
+
 
   ingress {
     description = "HTTP from anywhere"
@@ -193,5 +171,5 @@ resource aws_route53_record webservers {
   name            = "www-${var.env}.${var.dns_domain_name}"
   type            = "CNAME"
   ttl             = "60"
-  records         = [ aws_elb.webservers.dns_name ]
+  records         = [ data.aws_lb.my_load_balancer.dns_name ]
 }

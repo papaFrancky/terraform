@@ -1,0 +1,18 @@
+{
+    "Comment": "Upsert the DNS record of the bastion to reflect its new IP address",
+    "Changes": [
+        {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "bastion.{{ dns_domain_name }}.",
+                "Type": "A",
+                "TTL": {{ dns_ttl }},
+                "ResourceRecords": [
+                    {
+                        "Value": "{{ ansible_ec2_public_ipv4 }}"
+                    }
+                ]
+            }
+        }
+    ]
+}
