@@ -3,7 +3,7 @@
 
 
 
-# CLOUD PRODVIDER
+# CLOUD PROVIDER
 # ---------------
 
 provider aws {
