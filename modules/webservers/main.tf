@@ -98,6 +98,10 @@ data aws_security_group load-balancer {
   name = "load-balancer"
 }
 
+data aws_security_group admin_instance {
+  name          = "admin"
+}
+
 resource aws_security_group webservers {
   name          = "webservers"
   description   = "Web servers security group"
@@ -129,11 +133,11 @@ resource aws_security_group webservers {
   }
   
   ingress {
-    description = "SSH from anywhere"
+    description = "SSH from the admin instance"
     protocol    = "tcp"
     from_port   = 22
     to_port     = 22
-    cidr_blocks = ["0.0.0.0/0"]
+    security_groups = [ data.aws_security_group.admin_instance.id ]
   }
   
   ingress {

@@ -1,6 +1,14 @@
 # terraform
 terraform code that provides a VPC and an auto scaling group for a simple web site
 
+## La 'big picture'
+Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), nous avons créé :
+
+- une instance EC2 dédiée à l'administration :
+  -  disposant d'accès sans restriction sur les services AWS (policy 'Administrator Access');
+  - accessible en SSH uniquement depuis l'adresse IP que nous utilisons pour accéder à internet;
+  - qu'il vaut mieux éteindre lorsque nous ne l'utilisons pas.
+ 
 
 ### Copie du code Ansible nécessaire à l'installation des webservers dans le bucket S3
 
