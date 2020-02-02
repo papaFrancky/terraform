@@ -10,14 +10,18 @@ provider aws {
 # vpc [dev|tst|acc|prd] info
 data aws_vpc "my_vpc" {
   tags = {
-    Name = "${var.env}"
+    Name = var.env
   }
 }
 
 
 # vpc subnets info
-data aws_subnet_ids my_subnets {
+data aws_subnet_ids my_public_subnets {
   vpc_id = data.aws_vpc.my_vpc.id
+
+  tags = {
+    subnet = "public"
+  }
 }
 
 
@@ -28,10 +32,11 @@ resource aws_lb my_load_balancer {
   load_balancer_type = "application"
   security_groups    = [ aws_security_group.load-balancer.id ]
   ip_address_type    = "ipv4"
-  subnets            = data.aws_subnet_ids.my_subnets.ids
+  subnets            = data.aws_subnet_ids.my_public_subnets.ids
   
   tags = {
-    Name = "${var.env}"
+    Name = var.env
+    env  = var.env
   }
 }
 

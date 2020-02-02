@@ -6,6 +6,7 @@
       "Action": [
         "ec2:CreateRoute",
         "ec2:ReplaceRoute",
+        "ec2:DescribeInstances",
         "ec2:DescribeInstanceAttribute",
         "ec2:DescribeRouteTables",
         "ec2:ModifyInstanceAttribute",

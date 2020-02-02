@@ -24,12 +24,12 @@ Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), no
 ## TODO
 
 - readme (pas complet du tout)
-- page html : renvoie dans l'onglet l'ip du serveur. devrait renvoyer www-{env}
+- [WIP] page html : renvoie dans l'onglet l'ip du serveur. devrait renvoyer www-{env}
 - prod : créer un alias dns www.domain au lieu de www-prd.domain
 - notifications SNS
-- créer une machine <env>-bastion et modifier les security groups des webservers pour que cette machine puisse y accéder en SSH et en HTTP pas besoin de HTTPS, on passera par la VIP).
+- [WIP] créer une machine <env>-bastion qui puisse accéder sans restriction de protocoles et de ports aux webservers
 - reprendre la grosse image et redéfinir ce que l'on souhaite exactement :
   * webserver : pas de mise à jour DNS
   * pas besoin de nom DNS depuis le vpc
-- réduire l'ELB connection draining pour détruire les instances EC2 plsu rapidement.
+- [WIP] réduire l'ELB connection draining pour détruire les instances EC2 plus rapidement.
 
