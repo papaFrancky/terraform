@@ -103,11 +103,12 @@ resource aws_lb_listener https-443 {
 
 # load-balancer target group corresponding to the webservers
 resource aws_lb_target_group webservers {
-  name        = "webservers"
-  port        = 80
-  protocol    = "HTTP"
-  vpc_id      = data.aws_vpc.my_vpc.id
-  target_type = "instance"
+  name                 = "webservers"
+  port                 = 80
+  protocol             = "HTTP"
+  vpc_id               = data.aws_vpc.my_vpc.id
+  target_type          = "instance"
+  deregistration_delay = 0
 
   stickiness {
     type    = "lb_cookie"
