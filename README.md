@@ -31,5 +31,5 @@ Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), no
 - reprendre la grosse image et redéfinir ce que l'on souhaite exactement :
   * webserver : pas de mise à jour DNS
   * pas besoin de nom DNS depuis le vpc
-
+- réduire l'ELB connection draining pour détruire les instances EC2 plsu rapidement.
 
