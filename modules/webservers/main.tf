@@ -2,7 +2,6 @@
 # --------------------------
 
 
-
 # CLOUD PROVIDER
 # --------------
 
@@ -18,7 +17,7 @@ provider aws {
 resource aws_launch_configuration webservers {
   name                        = "${var.env}-webservers"
   image_id                    = data.aws_ami.amazon_latest.id
-  associate_public_ip_address = true
+  associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.webservers.id
   instance_type               = var.instance_type
   key_name                    = var.ssh_key
@@ -34,14 +33,18 @@ resource aws_launch_configuration webservers {
 # AUTO SCALING GROUP
 # ------------------
 
-data aws_vpc "my_vpc" {
+data aws_vpc my_vpc {
   tags = {
-    Name = "${var.env}"
+    Name = var.env
   }
 }
 
 data aws_subnet_ids my_subnets {
   vpc_id = data.aws_vpc.my_vpc.id
+
+  tags = {
+    subnet = "public"
+  }
 }
 
 data aws_lb_target_group webservers {
@@ -61,12 +64,20 @@ resource aws_autoscaling_group webservers {
 
   min_size              = var.nb_servers_min
   max_size              = var.nb_servers_max
+  desired_capacity      = var.nb_servers_min
 
-  tag {
-    key                 = "Name"
-    value               = "${var.env}-webservers"
-    propagate_at_launch = true
-  }
+  tags = [
+    {
+      key                 = "Name"
+      value               = "${var.env}-webservers"
+      propagate_at_launch = true
+    },
+    {
+      key                 = "env"
+      value               = var.env
+      propagate_at_launch = true
+    }
+  ] 
 }
 
 
@@ -122,32 +133,15 @@ resource aws_security_group webservers {
     to_port     = 443
     security_groups = [ data.aws_security_group.load-balancer.id ]
   }
-
-
-  ingress {
-    description = "HTTP from anywhere"
-    protocol    = "tcp"
-    from_port   = var.http_port
-    to_port     = var.http_port
-    cidr_blocks = ["0.0.0.0/0"]
-  }
   
   ingress {
-    description = "SSH from the admin instance"
-    protocol    = "tcp"
-    from_port   = 22
-    to_port     = 22
+    description = "Full access from the admin instance"
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
     security_groups = [ data.aws_security_group.admin_instance.id ]
   }
-  
-  ingress {
-    description = "ICMP from anywhere"
-    protocol    = "icmp"
-    from_port   = -1
-    to_port     = -1
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
+    
   egress {
     from_port   = 0
     to_port     = 0
@@ -162,6 +156,44 @@ resource aws_security_group webservers {
    tags = {
       Name = "webservers"
   }
+}
+
+
+
+# INSTANCE PROFILE
+# ----------------
+
+resource aws_iam_role webservers {
+  name                  = "webservers"
+  description           = "IAM role for web servers"
+  assume_role_policy    = file("${path.module}/files/ec2-trust.json")
+
+  tags = {
+      Name = "webservers"
+  }
+}
+
+resource aws_iam_instance_profile webservers {
+  name      = "webservers"
+  role      = aws_iam_role.webservers.name
+}
+
+resource aws_iam_role_policy ec2-access {
+  name      = "ec2-access"
+  role      = aws_iam_role.webservers.id
+  policy    = file("${path.module}/files/ec2-access.json")
+}
+
+resource aws_iam_role_policy route53-upsert-records {
+  name      = "route53-upsert-records"
+  role      = aws_iam_role.webservers.id
+  policy    = file("${path.module}/files/route53-upsert-records.json")
+}
+
+resource aws_iam_role_policy s3-access {
+  name      = "s3-access"
+  role      = aws_iam_role.webservers.id
+  policy    = file("${path.module}/files/s3-access.json")
 }
 
 

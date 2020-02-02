@@ -9,12 +9,13 @@ provider aws {
 }
 
 
+
 # EC2 INSTANCE
 # ------------
 
 # admin ec2 instance
 resource aws_instance admin {
-    ami                         = data.aws_ami.amazon-latest.id
+    ami                         = data.aws_ami.amazon_latest.id
     associate_public_ip_address = true
     iam_instance_profile        = aws_iam_instance_profile.admin.id
     instance_type               = var.instance_type
@@ -24,12 +25,13 @@ resource aws_instance admin {
     user_data                   = file("${path.module}/files/user-data.bash")
 
     tags = {
-        "Name" = "${var.env}-admin"
+        Name = "${var.env}-admin"
+        env  = var.env
     }
 }
 
 # latest amazon linux ami
-data "aws_ami" "amazon-latest" {
+data "aws_ami" "amazon_latest" {
     most_recent = true
     owners      = [ "amazon" ]
     filter {
@@ -47,11 +49,9 @@ data aws_subnet public_subnet {
     tags = {
         Name = "${var.env}-public-${var.region}a"
     }
-    #filter {
-    #    name    = "tag:Name"
-    #    values  = [ "${var.env}-public-${var.region}a" ]
-    #}
-}
+ }
+
+
 
 # SECURITY GROUP
 # --------------

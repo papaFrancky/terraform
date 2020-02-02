@@ -10,13 +10,14 @@ provider aws {
 #  VPC
 # --------
 
-resource aws_vpc "my_vpc" {
+resource aws_vpc my_vpc {
   cidr_block            = var.cidr
   enable_dns_support    = true
   enable_dns_hostnames  = true
 
   tags = {
-    Name = "${var.env}"
+    Name = var.env
+    env  = var.env
   }
 }
 
@@ -34,7 +35,9 @@ resource aws_subnet public {
     map_public_ip_on_launch = true
     
     tags = {
-        "Name" = "${var.env}-public-${element(data.aws_availability_zones.all.names, count.index)}"
+      Name   = "${var.env}-public-${element(data.aws_availability_zones.all.names, count.index)}"
+      env    = var.env
+      subnet = "public"
     }
 }
 
@@ -47,7 +50,8 @@ resource aws_internet_gateway my_igw {
   vpc_id = aws_vpc.my_vpc.id
 
   tags = {
-        "Name" = "${var.env}"
+        Name = var.env
+        env  = var.env
     }
 }
 
@@ -58,7 +62,8 @@ resource aws_route_table public {
     vpc_id  = aws_vpc.my_vpc.id
  
     tags = {
-        "Name" = "${var.env}-public"
+        Name = "${var.env}-public"
+        env  = var.env
     }
 }
 
