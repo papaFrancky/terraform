@@ -11,9 +11,9 @@ provider aws {
 # --------
 
 resource aws_vpc my_vpc {
-  cidr_block            = var.cidr
-  enable_dns_support    = true
-  enable_dns_hostnames  = true
+  cidr_block           = var.cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = false
 
   tags = {
     Name = var.env
@@ -32,7 +32,7 @@ resource aws_subnet public {
     vpc_id                  = aws_vpc.my_vpc.id
     cidr_block              = cidrsubnet(var.cidr, 8, 101 + count.index)
     availability_zone	      = element(data.aws_availability_zones.all.names, count.index)
-    map_public_ip_on_launch = true
+    map_public_ip_on_launch = false
     
     tags = {
       Name   = "${var.env}-public-${element(data.aws_availability_zones.all.names, count.index)}"
