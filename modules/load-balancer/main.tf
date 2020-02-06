@@ -112,7 +112,7 @@ resource aws_lb_target_group webservers {
   protocol             = "HTTP"
   vpc_id               = data.aws_vpc.my_vpc.id
   target_type          = "instance"
-  deregistration_delay = 0
+  deregistration_delay = 10
 
   stickiness {
     type    = "lb_cookie"

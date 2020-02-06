@@ -15,7 +15,7 @@ provider aws {
 # --------------------
 
 resource aws_launch_configuration webservers {
-  name                        = "${var.env}-webservers"
+  name_prefix                 = "${var.env}-webservers-"
   image_id                    = data.aws_ami.amazon_latest.id
   associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.webservers.id

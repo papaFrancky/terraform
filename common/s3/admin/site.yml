@@ -49,14 +49,24 @@
       wait:      no
 
 
-  - name: full update
-    yum:
-      name:  '*'
-      state: latest
-
-
   - name: exec user-data everytime at boot
     replace:
       path:    /etc/cloud/cloud.cfg
       regexp:  '^ - scripts-user$'
       replace: ' - [scripts-user, always]'
+
+
+  - name: stop and disable containerization
+    systemd:
+      name:    "{{ item }}"
+      state:   stopped
+      enabled: no
+    loop:
+      - docker
+      - containerd
+
+
+  - name: full update
+    yum:
+      name:  '*'
+      state: latest

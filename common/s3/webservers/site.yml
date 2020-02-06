@@ -37,17 +37,21 @@
       msg: "tag Name = {{ ec2_tags.tags.Name}}"
 
 
-  - name: full update
-    yum:
-      name:  '*'
-      state: latest
-
-
   - name: exec user-data everytime at boot
     replace:
       path:    /etc/cloud/cloud.cfg
       regexp:  '^ - scripts-user$'
       replace: ' - [scripts-user, always]'
+
+
+  - name: stop and disable containerization
+    systemd:
+      name:    "{{ item }}"
+      state:   stopped
+      enabled: no
+    loop:
+      - docker
+      - containerd
 
 
   - name: install apache webserver
@@ -64,9 +68,13 @@
 
  
   - name: enable and start apache service
-    service:
+    systemd:
       name:    httpd
       state:   started
       enabled: yes
 
 
+  - name: full update
+    yum:
+      name:  '*'
+      state: latest
