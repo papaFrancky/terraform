@@ -19,7 +19,6 @@ variable env {
 variable instance_type {
   description = "EC2 instance type"
   type        = string
-  default     = "t2.micro"
 }
 
 
@@ -56,4 +55,10 @@ variable dns_domain_name {
   description = "DNS domain name"
   type        = string
   default     = "codeascode.net"
+}
+
+variable use_prod_cname {
+  description = "If set to true, FQDN suffix will be 'www'. IF not, the env (dev|tst|acc) will be used."
+  type        = bool
+  default     = false
 }

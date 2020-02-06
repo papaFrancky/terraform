@@ -22,8 +22,21 @@ Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), no
 ## TODO
 
 - readme (pas complet du tout)
-- prod : créer un alias dns www.domain au lieu de www-prd.domain
+- [WIP] prod : créer un alias dns www.domain au lieu de www-prd.domain
 - notifications SNS
 - reprendre la grosse image et redéfinir ce que l'on souhaite exactement :
-  * webserver : pas de mise à jour DNS
-  * pas besoin de nom DNS depuis le vpc
+  * [WIP] webserver : pas de mise à jour DNS
+  * [WIP] pas besoin de nom DNS depuis le vpc
+- proposer le type d'instance pour les webservers au niveau des environnements de développement et non donner une valeur par défaut au niveau du module.
+- tests de charge : hey -n 1000 -c 200 -z 10m  -m GET https://www-dev.codeascode.net/
+
+
+
+04/02/2020
+
+  - Sans IP publique dans le subnet public, les instances webservers ne communiquent pas avec l'extérieur. 
+    Tenter de les démarrer sur le subnet privé.
+  
+  - la destruction du load-balancer se traduit toujours par 300s d'attente avant de détruire les instances de l'auto-scaling.
+    Comment changer cela ?
+

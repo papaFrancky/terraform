@@ -11,9 +11,9 @@ provider aws {
 # --------
 
 resource aws_vpc my_vpc {
-  cidr_block            = var.cidr
-  enable_dns_support    = true
-  enable_dns_hostnames  = true
+  cidr_block           = var.cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = false
 
   tags = {
     Name = var.env

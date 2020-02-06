@@ -95,7 +95,6 @@ resource aws_lb_listener http-80 {
 resource aws_lb_listener https-443 {
   load_balancer_arn = aws_lb.my_load_balancer.arn
   protocol          = "HTTPS"
-  #protocol          = "TLS"
   port              = 443
   ssl_policy        = "ELBSecurityPolicy-2016-08"
   certificate_arn   = var.tls_certificate_arn
@@ -113,7 +112,7 @@ resource aws_lb_target_group webservers {
   protocol             = "HTTP"
   vpc_id               = data.aws_vpc.my_vpc.id
   target_type          = "instance"
-  deregistration_delay = 0
+  deregistration_delay = 10
 
   stickiness {
     type    = "lb_cookie"

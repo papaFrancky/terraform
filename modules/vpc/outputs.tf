@@ -2,26 +2,26 @@
 # ----------------------
 
 
-output "region" {
+output region {
   value   = var.region
 }
 
-output "env" {
+output env {
   value   = var.env
 }
 
-output "vpc_id" {
+output vpc_id {
   value   = aws_vpc.my_vpc.id
 }
 
-output "public_subnets_ids" {
+output public_subnets_ids {
     value = aws_subnet.public.*.id
 }
 
-output "public_subnets_names" {
+output public_subnets_names {
   value   = aws_subnet.public.*.tags.Name
 }
 
-output "public_cidrs" {
+output public_cidrs {
     value = aws_subnet.public.*.cidr_block
 }

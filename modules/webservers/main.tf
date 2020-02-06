@@ -15,7 +15,7 @@ provider aws {
 # --------------------
 
 resource aws_launch_configuration webservers {
-  name                        = "${var.env}-webservers"
+  name_prefix                 = "${var.env}-webservers-"
   image_id                    = data.aws_ami.amazon_latest.id
   associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.webservers.id
@@ -119,6 +119,14 @@ resource aws_security_group webservers {
   vpc_id        = data.aws_vpc.my_vpc.id
   
   ingress {
+    description = "Full access from the admin instance"
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    security_groups = [ data.aws_security_group.admin_instance.id ]
+  }
+
+  ingress {
     description = "HTTP from load-balancer"
     protocol    = "tcp"
     from_port   = 80
@@ -133,15 +141,7 @@ resource aws_security_group webservers {
     to_port     = 443
     security_groups = [ data.aws_security_group.load-balancer.id ]
   }
-  
-  ingress {
-    description = "Full access from the admin instance"
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    security_groups = [ data.aws_security_group.admin_instance.id ]
-  }
-    
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -184,12 +184,6 @@ resource aws_iam_role_policy ec2-access {
   policy    = file("${path.module}/files/ec2-access.json")
 }
 
-resource aws_iam_role_policy route53-upsert-records {
-  name      = "route53-upsert-records"
-  role      = aws_iam_role.webservers.id
-  policy    = file("${path.module}/files/route53-upsert-records.json")
-}
-
 resource aws_iam_role_policy s3-access {
   name      = "s3-access"
   role      = aws_iam_role.webservers.id
@@ -201,10 +195,23 @@ resource aws_iam_role_policy s3-access {
 # DNS ALIAS
 # ---------
 
-resource aws_route53_record webservers {
+resource aws_route53_record webservers_prod {
+  count = var.use_prod_cname == true ? 1 : 0
+
   allow_overwrite = true
   zone_id         = var.dns_zone_id
-  name            = "www-${var.env}.${var.dns_domain_name}"
+  name            = "www.${var.dns_domain_name}"
+  type            = "CNAME"
+  ttl             = "60"
+  records         = [ data.aws_lb.my_load_balancer.dns_name ]
+}
+
+resource aws_route53_record webservers_noprod {
+  count = var.use_prod_cname == false ? 1 : 0
+
+  allow_overwrite = true
+  zone_id         = var.dns_zone_id
+  name            = "${var.env}.${var.dns_domain_name}"
   type            = "CNAME"
   ttl             = "60"
   records         = [ data.aws_lb.my_load_balancer.dns_name ]

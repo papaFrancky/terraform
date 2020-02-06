@@ -6,8 +6,8 @@
   become_method: sudo
 
   vars:
-    dns_domain_name:  "codeascode.net"
-    dns_ttl:          60
+    dns_domain_name: "codeascode.net"
+    dns_ttl:         60
 
   tasks:
 
@@ -19,7 +19,7 @@
       msg: "ansible_ec2_placement_region = {{ ansible_ec2_placement_region }}"
 
   - debug:
-      msg: "ansible_ec2_public_ipv4 = {{ ansible_ec2_public_ipv4 }}"
+      msg: "ansible_ec2_local_ipv4 = {{ ansible_ec2_local_ipv4 }}"
   
   - debug:
       msg: "ansible_ec2_instance_id = {{ ansible_ec2_instance_id }}"
@@ -27,58 +27,54 @@
 
   - name: get ec2 tags for this instance
     local_action:
-      module:           ec2_tag
-      region:           "{{ ansible_ec2_placement_region }}"
-      resource:         "{{ ansible_ec2_instance_id }}"
-      state:            list
+      module:   ec2_tag
+      region:   "{{ ansible_ec2_placement_region }}"
+      resource: "{{ ansible_ec2_instance_id }}"
+      state:    list
     register: ec2_tags
 
   - debug:
       msg: "tag Name = {{ ec2_tags.tags.Name}}"
 
 
-  - name: update dns entry
-    route53:
-      state:            present
-      ttl:              "{{ dns_ttl }}"
-      zone:             "{{ dns_domain_name }}"
-      record:           "{{ ec2_tags.tags.Name}}.{{ dns_domain_name }}"
-      type:             A
-      value:            "{{ ansible_ec2_public_ipv4 }}"
-      overwrite:        yes
-      wait:             no
-
-
-#  - name: full update
-#    yum:
-#      name:             '*'
-#      state:            latest
-
-
   - name: exec user-data everytime at boot
     replace:
-      path:             /etc/cloud/cloud.cfg
-      regexp:           '^ - scripts-user$'
-      replace:          ' - [scripts-user, always]'
+      path:    /etc/cloud/cloud.cfg
+      regexp:  '^ - scripts-user$'
+      replace: ' - [scripts-user, always]'
+
+
+  - name: stop and disable containerization
+    systemd:
+      name:    "{{ item }}"
+      state:   stopped
+      enabled: no
+    loop:
+      - docker
+      - containerd
 
 
   - name: install apache webserver
     yum:
-      name:             httpd
-      state:            present
+      name:  httpd
+      state: present
 
 
   - name: create apache's index page
     template:
-      src:              index.html.j2
-      dest:             /var/www/html/index.html
-      backup:           yes
+      src:    index.html.j2
+      dest:   /var/www/html/index.html
+      backup: yes
 
  
   - name: enable and start apache service
-    service:
-      name:             httpd
-      state:            started
-      enabled:          yes
+    systemd:
+      name:    httpd
+      state:   started
+      enabled: yes
 
 
+  - name: full update
+    yum:
+      name:  '*'
+      state: latest
