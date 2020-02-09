@@ -23,3 +23,13 @@ output elb_instances {
     aws_lb.my_load_balancer
   ]
 }
+
+
+output sns_topic_name {
+  value = data.aws_sns_topic.my_topic.name
+}
+
+
+output sns_topic_arn {
+  value = data.aws_sns_topic.my_topic.arn
+}
