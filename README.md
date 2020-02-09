@@ -45,3 +45,10 @@ Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), no
 sudo rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 sudo yum install siege
 siege -b -c 150 https://dev.codeascode.net/phpinfo.php
+
+# DEMO SCALING UP et SCALING DOWN
+Se loguer sur les instances dev-webservers et lancer un
+
+    yes > /dev/null &
+    top
+Faire monter la CPU sur les 2 instances jusqu'à déclencher l'alarme.
