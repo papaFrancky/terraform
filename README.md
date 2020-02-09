@@ -1,8 +1,50 @@
 # terraform
-terraform code that provides a VPC and an auto scaling group for a simple web site
+
+## Introduction
+
+Source: https://github.com/papaFrancky/terraform.git
+
+Ce repository tire son nom de l'outil d'Infrastructure As Code (IAC) développé par la société [HashiCorp](https://www.hashicorp.com/): [terraform](https://www.terraform.io/).
+
+Le présent code permet pour l'environnement (\<env\>) [DEV|TST|ACC|PRD] choisi la création :
+* d'un VPC nommé \<env\>;
+* d'une instance EC2 dédiée à l'administration et utilisée comme un 'Jump Host';
+* d'un Load-Balancer Applicatif (ALB);
+* d'un Auto Scaling Group (ASG) permettant le déploiement de serveurs web.
+
+
 
 ## La 'big picture'
+
+![big picture](presentation/images/terraform.alb-asg.png)
 Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), nous avons créé :
+
+### Le VPC
+
+Un VPC sera créé pour chacun des environnements suivants:
+Environnement|Développement|Tests|Acceptance|Production
+---|---|---|---|---
+\<env\>|dev|tst|acc|prd
+
+Chaque VPC sera constitué de 2 subnets de types public et privé, tous 2 répartis sur les 3 Availability Zones (AZ) que compte la région Paris :
+* Public subnet : nous créerons donc 3 subnets (un par AZ) avec des plages d'adresses IP qui ne se recouvrent pas et dont la table de routage aura pour passerelle par défaut une 'Internet Gateway' (internet facing);
+* Private subnet : à l'instar du 'public subnet', il comptera lui aussi 3 subnets répartis chacun sur une AZ distincte et avec des plages d'adresses IP distinctes. La différence réside dans le fait que la passerelle par défaut de leur table de routage respective sera une NAT gateway qui leur sera propre.
+
+Veuillez noter que la création du subnet de type privé est optionnelle dnas la mesure où elle a pour but d'héberger les middlewares et/ou backends ne devant pas être exposés directement à internet (comme les bases de données par exemple). Notre code se contente ici de déployer des instances dans le subnet public aussi pouvons-nous nous en passer, ce qui est préférable car les NAT gateways ont un coût non négligeable.
+
+Si vous souhaitez créer le subnet privé, il vous suffit de renommer le fichier *'modules/vpc/private-subnet.tf.disabled'* en *'modules/vpc/private-subnet.tf'*.
+
+vpc|region|availability zone|subnet type|subnet|cidr|gateway|internet facing
+---|---|---|---|---|---|---|---
+\<env\>|eu-west-3|eu-west-3a|public|\<env\>-public-eu-west-3a|10.0.101.0/24|\<env\>|yes
+\<env\>|eu-west-3|eu-west-3b|public|\<env\>-public-eu-west-3b|10.0.102.0/24|\<env\>|yes
+\<env\>|eu-west-3|eu-west-3c|public|\<env\>-public-eu-west-3c|10.0.103.0/24|\<env\>|yes
+\<env\>|eu-west-3|eu-west-3a|private|\<env\>-private-eu-west-3a|10.0.201.0/24|\<env\>-eu-west-3a|no
+\<env\>|eu-west-3|eu-west-3b|private|\<env\>-private-eu-west-3b|10.0.202.0/24|\<env\>-eu-west-3b|no
+\<env\>|eu-west-3|eu-west-3c|private|\<env\>-private-eu-west-3c|10.0.203.0/24|\<env\>-eu-west-3c|no
+
+ 
+
 
 - une instance EC2 dédiée à l'administration :
   - disposant d'accès sans restriction sur les services AWS (policy 'Administrator Access');
