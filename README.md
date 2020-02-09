@@ -19,7 +19,9 @@ Le présent code permet pour l'environnement (\<env\>) [DEV|TST|ACC|PRD] choisi 
 ![big picture](presentation/images/terraform.alb-asg.png)
 Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), nous avons créé :
 
-### Le VPC
+## Le VPC
+
+### Description
 
 Un VPC sera créé pour chacun des environnements suivants:
 Environnement|Développement|Tests|Acceptance|Production
@@ -43,13 +45,88 @@ vpc|region|availability zone|subnet type|subnet|cidr|gateway|internet facing
 \<env\>|eu-west-3|eu-west-3b|private|\<env\>-private-eu-west-3b|10.0.202.0/24|\<env\>-eu-west-3b|no
 \<env\>|eu-west-3|eu-west-3c|private|\<env\>-private-eu-west-3c|10.0.203.0/24|\<env\>-eu-west-3c|no
 
- 
+### Création du VPC
+
+\<terraform_repository\> = clone du repository 'terraform' (ex: /home/user/terraform)
+
+\<env\> = environnement souhaité (dev, tst, acc, prd)
+
+    cd <terraform_repository>/<env>/vpc
+    terraform init
+    terraform plan
+    terraform apply --auto-approve
+
+### Destruction du VPC
+
+    cd <terraform_repository>/<env>/vpc
+    terraform destroy --auto-approve
+
+## L'instance EC2 d'administration
+
+### Description
+
+Les webservers que nous allons déployer plus tard ne seront accessibles depuis internet qu'en http/80 et https/443.
+Si nous souhaitons nous y connecter en ssh/22, nous devrons passer par l'instance d'administration dédiée à cet usage (JumpHost).
+
+L'instance EC2 en question dispose de privilèges étendus (IAM policy: *'AdministratorAccess'*) lui permettant de disposer sans limites de tous les services proposés par AWS. 
+
+Elle est par conséquent particulièrement sensible et pour éviter sa compromission, quelques règles d'usage s'imposent :
+* son accès doit être **restreint** à l'adresse IP avec laquelle vous accéder à internet;
+* si vous avez déployé les webservers et que vous ne faites pas usage de l'instance d'admin, **arrêtez-la** via la console (ou via API si vous préférez).
+* si l'autoscaling group des webservers n'est pas déployé, **détruisez-la**.
+
+### Création de l'instance EC2 d'administration
+
+#### Configuration de l'instance
+
+    cd <terraform_repository>/<env>/admin-ec2-instance
+    vi main.tf
 
 
-- une instance EC2 dédiée à l'administration :
-  - disposant d'accès sans restriction sur les services AWS (policy 'Administrator Access');
-  - accessible en SSH uniquement depuis l'adresse IP que nous utilisons pour accéder à internet;
-  - qu'il vaut mieux éteindre lorsque nous ne l'utilisons pas.
+variable|description|type|default|example
+---|---|---|---|---
+my_own_ip_address|Adresse IP autorisée en SSH|string|"0.0.0.0/0"|"88.191.67.129/32"
+instance_type|Type d'instance EC2|string|"t3.micro"|...
+
+#### Création de l'instance
+
+    cd <terraform_repository>/<env>/admin-ec2-instance
+    terraform init
+    terraform plan
+    terraform apply --auto-approve
+
+#### Arrêt de l'instance 
+
+Pour l'heure, aucun script n'est fourni avec le code terraform pour arrêter l'instance en utilisant une API AWS. Vous devrez passer par la console AWS pour effectuer cette opération.
+
+#### Descruction de l'instance 
+
+    cd <terraform_repository>/<env>/admin-ec2-instance
+    terraform destroy --auto-approve
+
+Notez que vous ne devez pas supprimer l'instance d'administration si vous avez déployé les webservers ou si vous comptez le faire. En effet, son Security Group (SG) fait référence à celui de l'instance d'admin pour restreindre leur accès en SSH à cette dernière. Si vous vous trouvez dans ce cas de figure, préférez son extinction plutôt que sa suppression.
+
+
+## Le Load-Balancer Applicatif (ALB)
+
+### Description
+
+![AWS Application Load Balancer](presentation/images/aws_alb.png)
+
+Pages de référence|URLs
+---|---
+Fonctionnalités d’Elastic Load Balancing|https://aws.amazon.com/fr/elasticloadbalancing/features/
+Qu'est-ce qu'un Application Load Balancer ?|https://docs.aws.amazon.com/fr_fr/elasticloadbalancing/latest/application/introduction.html
+
+
+
+
+
+
+
+=======================================================================
+
+
 
 - Décrire l'ELB
   - les diffrnets load-balancers proposés par AWS
@@ -78,10 +155,7 @@ vpc|region|availability zone|subnet type|subnet|cidr|gateway|internet facing
 ## TODO
 
 - readme (pas complet du tout)
-- [WIP] notifications SNS
-- reprendre la grosse image et redéfinir ce que l'on souhaite exactement :
-- tests de charge : hey -n 1000 -c 200 -z 10m  -m GET https://www-dev.codeascode.net/
-
+- finir les environnements tst, acc et prd  :smiley:
 
 # SIEGE
 sudo rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
