@@ -62,3 +62,8 @@ variable use_prod_cname {
   type        = bool
   default     = false
 }
+
+variable sns_topic {
+  description = "SNS topic name" 
+  type        = string
+}

@@ -54,10 +54,13 @@
       - containerd
 
 
-  - name: install apache webserver
+  - name: install apache + php
     yum:
-      name:  httpd
+      name:  "{{ item }}"
       state: present
+    loop:
+      - httpd
+      - php
 
 
   - name: create apache's index page
@@ -66,7 +69,13 @@
       dest:   /var/www/html/index.html
       backup: yes
 
+
+  - name: create php info page
+    copy:
+      src:  phpinfo.php
+      dest: /var/www/html/phpinfo.php
  
+
   - name: enable and start apache service
     systemd:
       name:    httpd
@@ -74,7 +83,7 @@
       enabled: yes
 
 
-  - name: full update
-    yum:
-      name:  '*'
-      state: latest
+  #- name: full update
+  #  yum:
+  #    name:  '*'
+  #    state: latest

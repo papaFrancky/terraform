@@ -10,6 +10,7 @@ output elb_dns_native_name {
   ]
 }
 
+
 output elb_dns_alias {
   value = module.webservers.elb_dns_alias
 
@@ -18,10 +19,21 @@ output elb_dns_alias {
   ]
 }
 
+
 output elb_instances {
   value = module.webservers.elb_instances
 
   depends_on = [
     module.webservers.aws_elb.webservers
   ]
+}
+
+
+output sns_topic_name {
+  value = module.webservers.sns_topic_name
+}
+
+
+output sns_topic_arn {
+  value = module.webservers.sns_topic_arn
 }

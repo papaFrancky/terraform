@@ -61,6 +61,22 @@ resource aws_autoscaling_group webservers {
   vpc_zone_identifier   = data.aws_subnet_ids.my_subnets.ids
   target_group_arns     = [ data.aws_lb_target_group.webservers.arn ]
   health_check_type     = "ELB"
+  
+  enabled_metrics       = [ 
+    "GroupMinSize",
+    "GroupMaxSize",
+    "GroupTotalCapacity",
+    "GroupPendingInstances",
+    "GroupTerminatingCapacity",
+    "GroupTotalInstances",
+    "GroupDesiredCapacity",
+    "GroupStandbyInstances",
+    "GroupInServiceCapacity",
+    "GroupTerminatingInstances",
+    "GroupPendingCapacity",
+    "GroupInServiceInstances",
+    "GroupStandbyCapacity"
+  ]
 
   min_size              = var.nb_servers_min
   max_size              = var.nb_servers_max
@@ -215,4 +231,28 @@ resource aws_route53_record webservers_noprod {
   type            = "CNAME"
   ttl             = "60"
   records         = [ data.aws_lb.my_load_balancer.dns_name ]
+}
+
+
+
+# SNS NOTIFICATIONS
+# -----------------
+
+resource "aws_autoscaling_notification" "my_autoscaling_notification" {
+  group_names = [
+    "${aws_autoscaling_group.webservers.name}"
+  ]
+
+  notifications = [
+    "autoscaling:EC2_INSTANCE_LAUNCH",
+    "autoscaling:EC2_INSTANCE_TERMINATE",
+    "autoscaling:EC2_INSTANCE_LAUNCH_ERROR",
+    "autoscaling:EC2_INSTANCE_TERMINATE_ERROR"
+  ]
+
+  topic_arn = data.aws_sns_topic.my_topic.arn
+}
+
+data aws_sns_topic my_topic {
+  name = var.sns_topic
 }
