@@ -6,9 +6,9 @@ Source: https://github.com/papaFrancky/terraform.git
 
 Ce repository tire son nom de l'outil d'Infrastructure As Code (IAC) développé par la société [HashiCorp](https://www.hashicorp.com/): [terraform](https://www.terraform.io/).
 
-Le présent code permet pour l'environnement (\<env\>) [DEV|TST|ACC|PRD] choisi la création :
+Le présent code permet pour l'environnement choisi (\<env\>) [DEV|TST|ACC|PRD] la création :
 * d'un VPC nommé \<env\>;
-* d'une instance EC2 dédiée à l'administration et utilisée comme un 'Jump Host';
+* d'une instance EC2 dédiée à l'administration et utilisée comme 'Jump Host';
 * d'un Load-Balancer Applicatif (ALB);
 * d'un Auto Scaling Group (ASG) permettant le déploiement de serveurs web.
 
@@ -23,21 +23,22 @@ Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), no
 
 ### Description
 
-Un VPC sera créé pour chacun des environnements suivants:
+Un VPC dédié sera créé pour chacun des environnements suivants:
+
 Environnement|Développement|Tests|Acceptance|Production
----|---|---|---|---
+:---:|:---:|:---:|:---:|:---:
 \<env\>|dev|tst|acc|prd
 
 Chaque VPC sera constitué de 2 subnets de types public et privé, tous 2 répartis sur les 3 Availability Zones (AZ) que compte la région Paris :
-* Public subnet : nous créerons donc 3 subnets (un par AZ) avec des plages d'adresses IP qui ne se recouvrent pas et dont la table de routage aura pour passerelle par défaut une 'Internet Gateway' (internet facing);
-* Private subnet : à l'instar du 'public subnet', il comptera lui aussi 3 subnets répartis chacun sur une AZ distincte et avec des plages d'adresses IP distinctes. La différence réside dans le fait que la passerelle par défaut de leur table de routage respective sera une NAT gateway qui leur sera propre.
+* **Public subnet** : nous créerons donc 3 subnets (un par AZ) avec des plages d'adresses IP qui ne se recouvrent pas et dont les tables de routage respectives auront pour passerelle par défaut une 'Internet Gateway' (internet facing);
+* **Private subnet** : à l'instar du 'public subnet', il comptera lui aussi 3 subnets répartis chacun sur une AZ distincte et avec des plages d'adresses IP distinctes. La différence réside dans le fait que la passerelle par défaut de leur table de routage sera une NAT gateway (une par subnet).
 
-Veuillez noter que la création du subnet de type privé est optionnelle dnas la mesure où elle a pour but d'héberger les middlewares et/ou backends ne devant pas être exposés directement à internet (comme les bases de données par exemple). Notre code se contente ici de déployer des instances dans le subnet public aussi pouvons-nous nous en passer, ce qui est préférable car les NAT gateways ont un coût non négligeable.
+Veuillez noter que la __création du subnet de type privé est optionnelle__ dans la mesure où elle a pour but d'héberger les middlewares et/ou backends ne devant pas être exposés directement à internet (bases de données, etc...). Notre code se contente ici de déployer des instances dans le subnet public aussi pouvons-nous nous en passer, ce qui est préférable car les NAT gateways ont un coût.
 
 Si vous souhaitez créer le subnet privé, il vous suffit de renommer le fichier *'modules/vpc/private-subnet.tf.disabled'* en *'modules/vpc/private-subnet.tf'*.
 
 vpc|region|availability zone|subnet type|subnet|cidr|gateway|internet facing
----|---|---|---|---|---|---|---
+:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:
 \<env\>|eu-west-3|eu-west-3a|public|\<env\>-public-eu-west-3a|10.0.101.0/24|\<env\>|yes
 \<env\>|eu-west-3|eu-west-3b|public|\<env\>-public-eu-west-3b|10.0.102.0/24|\<env\>|yes
 \<env\>|eu-west-3|eu-west-3c|public|\<env\>-public-eu-west-3c|10.0.103.0/24|\<env\>|yes
@@ -47,9 +48,9 @@ vpc|region|availability zone|subnet type|subnet|cidr|gateway|internet facing
 
 ### Création du VPC
 
-\<terraform_repository\> = clone du repository 'terraform' (ex: /home/user/terraform)
+**\<terraform_repository\>** = clone du repository 'terraform' (ex: /home/user/terraform)
 
-\<env\> = environnement souhaité (dev, tst, acc, prd)
+**\<env\>** = environnement souhaité (dev, tst, acc, prd)
 
     cd <terraform_repository>/<env>/vpc
     terraform init
@@ -65,10 +66,10 @@ vpc|region|availability zone|subnet type|subnet|cidr|gateway|internet facing
 
 ### Description
 
-Les webservers que nous allons déployer plus tard ne seront accessibles depuis internet qu'en http/80 et https/443.
-Si nous souhaitons nous y connecter en ssh/22, nous devrons passer par l'instance d'administration dédiée à cet usage (JumpHost).
+Les webservers que nous allons déployer plus tard ne seront accessibles depuis internet qu'en **http/80** et **https/443**.
+Si nous souhaitons nous y connecter en **ssh/22**, nous devrons passer par l'instance d'administration dédiée à cet usage (Jump Host).
 
-L'instance EC2 en question dispose de privilèges étendus (IAM policy: *'AdministratorAccess'*) lui permettant de disposer sans limites de tous les services proposés par AWS. 
+L'instance EC2 en question dispose de **privilèges étendus** (IAM policy: *'AdministratorAccess'*) lui permettant de disposer sans limites de tous les services proposés par AWS. 
 
 Elle est par conséquent particulièrement sensible et pour éviter sa compromission, quelques règles d'usage s'imposent :
 * son accès doit être **restreint** à l'adresse IP avec laquelle vous accéder à internet;
@@ -84,7 +85,7 @@ Elle est par conséquent particulièrement sensible et pour éviter sa compromis
 
 
 variable|description|type|default|example
----|---|---|---|---
+---|---|:---:|:---:|:---:
 my_own_ip_address|Adresse IP autorisée en SSH|string|"0.0.0.0/0"|"88.191.67.129/32"
 instance_type|Type d'instance EC2|string|"t3.micro"|...
 
@@ -114,7 +115,7 @@ Notez que vous ne devez pas supprimer l'instance d'administration si vous avez d
 ![AWS Application Load Balancer](presentation/images/aws_alb.png)
 
 Pages de référence|URLs
----|---
+:---:|---
 Fonctionnalités d’Elastic Load Balancing|https://aws.amazon.com/fr/elasticloadbalancing/features/
 Qu'est-ce qu'un Application Load Balancer ?|https://docs.aws.amazon.com/fr_fr/elasticloadbalancing/latest/application/introduction.html
 
