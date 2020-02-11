@@ -19,9 +19,76 @@ Le présent code permet pour l'environnement choisi (\<env\>) [DEV|TST|ACC|PRD] 
 ![big picture](presentation/images/terraform.alb-asg.png)
 Dans un VPC dédié à l'environnement qui nous intéresse (DEV|TST|ACC|PRD), nous avons créé :
 
+
+## Avant de commencer
+
+Un certain nombre de prérequis doit être satisfaits avant de commencer :
+
+### Paire de clés SSH
+Vous devrez disposer avant de commencer les déploiements d'une paire de clés pour les serveurs web et une autre pour l'instance d'admin (EC2 / Network & Security / Key pairs).
+
+Module|variable|valeur
+:---:|:---:|:---:
+admin-ec2-instance|ssh_key|admin
+webservers|ssh_key|webservers
+
+### Nom de domaine DNS
+Notre instance d'admin et le load-balancer placé devant les instances 'webservers' seront accessibles depuis internet et utiliseront un nom de domaine que vous aurez pris soin de faire héberger sur AWS Route53.
+Pour notre démo, nous utiliserons le nom de domaine suivant :
+
+Domain Name|Hosted Zone ID
+:---:|:---:
+codeascode.net|Z12Y4ZPECZULO5
+
+Notez qu'il vous faudra mettre à jour les fichiers suivants avec les valeurs correspondant à votre nom de domaine :
+
+File|dns_domain_name|dns_zone_id
+---|:---:|:---:
+common/s3/admin/site.yml|X|
+common/s3/webservers/site.yml|X|
+modules/webservers/vars.tf|X|X
+modules/load-balancer/vars.tf|X|
+
+
+### Certificat X509
+La génération et la gestion de vie d'un certificat est d'une simplicité déconcertante via le service [AWS Certificate Manager](https://aws.amazon.com/fr/certificate-manager/).
+Pour autant sa validation peut prendre plusieurs heures aussi est-il préférable de le générer au préalable.
+
+File|Variable|Description
+---|---|---
+modules/load-balancer/vars.tf|tls_certificate_arn|ARN du certificat X509
+
+
+
+### Code ansible
+Lorsque les instances d'admin et les webservers seront lancées, elles récupéreront dans un bucket S3 du code ansible pour finaliser leur installation.
+Il est donc primordial que ce code soit mis à jour et poussé sur le bucket avant de commencer les déploiements.
+Voici comment procéder :
+
+ansible code|working directory|push to S3 bucket
+:---:|---|---
+Admin instance|common/s3/admin|aws s3 sync . s3://\<s3_bucket\>/admin/ --exclude ".git/*" --exclude "*/.terraform/*" --delete
+Webservers|common/s3/webservers|aws s3 sync . s3://\<s3_bucket\>/webservers/ --exclude ".git/*" --exclude "*/.terraform/*" --delete
+
+__Notes:__ 
+* Vous aurez besoin du client AWS CLI;
+* Pour notre démo, nous utiliserons un bucket nommé *'demo-infra-s3-bucket'*.
+* Les commandes de synchronisation du code dans le bucket S3 sont décrites dans les fichiers 'readme.md' présents avec le code ansible.
+
+### Votre adresse IP
+L'instance d'admin disposant de tous les privilèges dans AWS, il est préférable de restreindre son accès à l'adresse IP avec laquelle vous accédez à internet.
+[Identifiez-la](https://www.whatsmyip.org/) et renseignez la variable suivante :
+
+File|Variable
+---|---
+modules/admin-ec2-instance/vars.tf|my_own_ip_address
+
+
 ## Le VPC
 
 ### Description
+
+![VPC](/presentation/images/AWS_Journey.2.VPC.png)
 
 Un VPC dédié sera créé pour chacun des environnements suivants:
 
@@ -100,7 +167,7 @@ instance_type|Type d'instance EC2|string|"t3.micro"|...
 
 Pour l'heure, aucun script n'est fourni avec le code terraform pour arrêter l'instance en utilisant une API AWS. Vous devrez passer par la console AWS pour effectuer cette opération.
 
-#### Descruction de l'instance 
+#### Destruction de l'instance 
 
     cd <terraform_repository>/<env>/admin-ec2-instance
     terraform destroy --auto-approve
