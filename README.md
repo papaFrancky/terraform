@@ -59,6 +59,13 @@ File|Variable|Description
 modules/load-balancer/vars.tf|tls_certificate_arn|ARN du certificat X509
 
 
+### Topic SNS
+Nous souhaitons être **notifiés** lorsque des instances de webservers sont créées ou supprimées, soit parce qu'elles sont en mauvaise santé (health check), soit pour répondre à un pic de charge.
+
+Pour ce faire, nous aurons défini au préalable un **topic SNS** (Simple Notification Service) nommé dans notre exemple *'codeascode-webservers-\<env\>'* et auquel nous aurons **souscrit** au moins une adresse email.
+
+L'auto scaling group adressera ainsi les alertes aux adresses email rattachées.
+
 
 ### Code ansible
 Lorsque les instances d'admin et les webservers seront lancées, elles récupéreront dans un bucket S3 du code ansible pour finaliser leur installation.
@@ -179,6 +186,8 @@ Notez que vous ne devez pas supprimer l'instance d'administration si vous avez d
 
 ### Description
 
+L’équilibreur de charge d’application fonctionne au niveau des requêtes (couche 7), en acheminant le trafic vers les cibles, à savoir des instances EC2, des conteneurs, des adresses IP ou des fonctions Lambda, selon le contenu de la requête.
+
 ![AWS Application Load Balancer](presentation/images/aws_alb.png)
 
 Pages de référence|URLs
@@ -187,52 +196,62 @@ Fonctionnalités d’Elastic Load Balancing|https://aws.amazon.com/fr/elasticloa
 Qu'est-ce qu'un Application Load Balancer ?|https://docs.aws.amazon.com/fr_fr/elasticloadbalancing/latest/application/introduction.html
 
 
+### Mise en oeuvre
+
+Notre site internet répondra en HTTPS/443 comme tous les sites le font aujourd'hui.
+Le trafic HTTP/80 sera quant à lui redirigé sur le site HTTPS/443.
+
+L'implémentation est la suivante:
+
+Listener|Règle
+---|---
+HTTP:80| redirection du trafic sur le listener HTTP:443
+HTTPS:443| le trafic est transféré au 'target group' webservers
+
+Target group|le trafic 
+---|---
+webservers|le trafic est envoyé en HTTP sur le port 80 aux instances qu'il regroupe
+
+Pour résumer, le load-balancer applicatif reçoit en entrée du trafic HTTPS et le transmet en HTTP au target group auquel sera rattaché l'auto scaling d'instances webservers.
+
+Bien entendu, pour supporter le HTTPS, nous devrons lui rattacher le certificat X509 correspondant au nom de domaine de notre site (cf. AWS Certificate Manager).
+
+
+## L'auto-scaling group de webservers
+
+L'auto scaling group est notre pièce maîtresse : c'est grâce à lui que nous pourrons adapter nos ressources (ie. le nombre d'instances EC2 webservers) pour répondre à un pic de consultation.
 
 
 
+!!! PARTIE A COMPLETER !!!
 
 
-=======================================================================
+______________________________________________________________________________
 
+## Tests de charge
 
+### Fail over
+Si une ou plusieurs instances EC2 venait à dysfonctionner (ie. à ne plus répondre correctement aux requêtes http/80), le load-balancer en informerait l'auto-scaling group qui procéderait alors à son/leur remplacement.
 
-- Décrire l'ELB
-  - les diffrnets load-balancers proposés par AWS
-  - Décrire l'ALB : notions de 'listeners' et de 'target groups' (reprendre le schéma de la page AWS)
-  - Le certificat TLS est porté par l'ALB -> mentionner le service Certificate Manager
-
-- l'instance d'admin est importante car nous restreignons l'accès SSH des webservers à cette instance.
-  Donc il faut la créer avant l'auto scaling group.
-  Ce qui n'empêche pas de l'éteindre si nous n'en avons pas besoin.
-
-## prerequis
-
-### topics SNS
-- codeascode-<env>
-
- ### Copie du code Ansible nécessaire à l'installation des webservers dans le bucket S3
-
-    cd ~/Documents/dev/github/
-    if [ ! -d code-as-code ]; then
-      git clone https://github.com/papaFrancky/code-as-code.git
-    fi
-    cd code-as-code
-    aws s3 sync . s3://demo-infra-s3-bucket/webservers/ --exclude ".git/*" --exclude "*/.terraform/*" --delete
-
-
-## TODO
-
-- readme (pas complet du tout)
-- finir les environnements tst, acc et prd  :smiley:
-
-# SIEGE
+#### *Modus Operandi*
 sudo rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
 sudo yum install siege
+
 siege -b -c 150 https://dev.codeascode.net/phpinfo.php
 
-# DEMO SCALING UP et SCALING DOWN
+
+### Scaling up et down
+
+Dans notre exemple, nous souhaitons d'augmenter de 1 le nombre d'instances EC2 de notre auto-scaling group si la moyenne de consommation CPU dépassait les 50% sur 2 périodes consécutives de 2 minutes.
+
+A l'inverse, si la moyenne de la consommation CPU des instances de l'auto-scaling group baissait en-dessous des 10% pendant 2 périodes consécutives de 2 minutes, 1 instance serait 'terminée'.
+
+Ces 2 alarmes définies et rattachées à l'auto-scaling group dans le service de monitoring CloudWatch. C'est ce service qui informera l'auto-scaling de la nécessité d'augmenter ou bien de réduire le nombre d'instances, et non le load-balancer comme ce fut le cas pour le fail-over. 
+
+#### *Modus Operandi*
 Se loguer sur les instances dev-webservers et lancer un
 
     yes > /dev/null &
     top
+
 Faire monter la CPU sur les 2 instances jusqu'à déclencher l'alarme.
