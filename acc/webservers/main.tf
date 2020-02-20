@@ -5,10 +5,10 @@
 module webservers {
   source         = "../../modules/webservers"
 
-  env            = "prd"
-  instance_type  = "t3.small"
-  nb_servers_min = 4
-  nb_servers_max = 10
+  env            = "acc"
+  instance_type  = "t3.micro"
+  nb_servers_min = 2
+  nb_servers_max = 6
   use_prod_cname = false
-  sns_topic      = "codeascode-webservers-prd"
+  sns_topic      = "codeascode-webservers-acc"
 }

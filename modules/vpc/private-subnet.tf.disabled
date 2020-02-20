@@ -1,3 +1,6 @@
+# modules/vpc/private-subnet.tf
+# -----------------------------
+
 # PRIVATE SUBNET
 # --------------
 

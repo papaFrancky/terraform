@@ -19,7 +19,7 @@ variable dns_domain_name {
 }
 
 variable tls_certificate_arn {
-  description = "TLS certificate ARN for *.codeascode.net domain name"
+  description = "TLS certificate ARN for wildcard domain name"
   type        = string
   default     = "arn:aws:acm:eu-west-3:410131128995:certificate/0f691692-0365-4c72-9dac-117e0181e8f7"
 }
