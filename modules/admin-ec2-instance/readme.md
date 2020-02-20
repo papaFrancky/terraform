@@ -6,9 +6,8 @@ The 'admin' EC2 instance is a small EC2 instance with an AdministratorAccess IAM
 
 
 ## Instance name
-Tag Name = \<env\>-admin
-
-DNS name = \<env\>-admin.codeascode.net
+* Tag Name = \<env\>-admin
+* DNS name = \<env\>-admin.codeascode.net
 
 *( with \<env\> = [ dev | tst | acc | prod ] )*
 
@@ -16,20 +15,25 @@ DNS name = \<env\>-admin.codeascode.net
 ## Prerequisites
 
 ### Ansible code previously pushed to S3 bucket
-Once the EC2 instance starts, it will try to retrieve the ansible code from : *'s3://demo-infra-s3-bucket/admin/'*.
+Once the EC2 instance starts, it will try to retrieve the ansible code from : *'s3://\<s3_bucket\>/admin/'*.
 
 So before applying terraform code, you first need to make sure the Ansible code has well been copied.
 
-    cd <terraform>/common/s3/admin/
-    aws s3 sync . s3://demo-infra-s3-bucket/admin/ --exclude ".git/*" --exclude "*/.terraform/*" --delete
-cf.  <terraform>/common/s3/admin/readme.md
+    cd <terraform_repository>/common/s3/admin/
+    aws s3 sync . s3://<s3_bucket>/admin/ \
+        --exclude ".git/*"                \
+        --exclude "*/.terraform/*"        \
+        --delete
+
+( cf.  \<terraform_repository\>/common/s3/admin/readme.md )
+
 
 ### SSH key pair
 You need to have the *'admin.pem'* private key in order to successfully connect to the 'admin' instance. 
 
 ### Your own IP address
 Because this EC2 instance has full AWS access, it is a good thing to restrict its SSH access from you own IP address.
-Once you identified it (ex: 12.34.56.78), edit the *\<terraform\>/\<env\>/main.tf* file and change the following variable :
+Once you identified it (ex: 12.34.56.78), edit the *\<terraform_repository\>/\<env\>/main.tf* file and change the following variable :
 
     my_own_ip_address = "12.34.56.78/32"
 

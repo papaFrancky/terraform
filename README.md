@@ -219,11 +219,92 @@ Bien entendu, pour supporter le HTTPS, nous devrons lui rattacher le certificat 
 
 ## L'auto-scaling group de webservers
 
-L'auto scaling group est notre pièce maîtresse : c'est grâce à lui que nous pourrons adapter nos ressources (ie. le nombre d'instances EC2 webservers) pour répondre à un pic de consultation.
+L'auto scaling group est notre pièce maîtresse : c'est grâce à ce dernier que nous pourrons adapter nos ressources (ie. le nombre d'instances EC2 webservers) pour répondre à un pic de consultation de notre site web.
+
+Liens utiles :
+
+Page|URL
+---|---
+AWS auto Scaling|https://aws.amazon.com/fr/autoscaling/
+Amazon EC2 Auto Scaling|https://aws.amazon.com/fr/ec2/autoscaling/?sc_channel=ba&sc_campaign=autoscaling-ec2-button&sc_medium=button&sc_country=global&sc_geo=global&sc_outcome=aware
 
 
+### Personnalisation de l'auto scaling group
 
-!!! PARTIE A COMPLETER !!!
+Nous pouvons configurer notre auto scaling group avec les variables décrites dans le tableau ci-dessous et présentes dans le fichier :
+
+\<env\>/webservers/main.tf
+
+Variable|Description|Example
+---|---|---
+instance_type|type d'instance EC2|t2.nano
+nb_servers_min|nombre d'instances EC2 minimum|1
+nb_servers_max|nombre d'instances EC2 maximum|6
+use_prod_cname|si PRD: 'www.\<domain_name\>'; sinon: '\<env\>.\<domain_name\> |dev.codeascode.net
+sns_topic|topic SNS créé pour les notifications par mail|codeascode-webservers-dev
+
+
+### Définition de la Launch Configuration
+La 'launch config.' définit l'instance EC2 qui sera gérée par l'auto scaling group : 
+* AMI
+* type d'instance
+* paire de clés SSH associée
+* rôle IAM (instance profile)
+* adresse IP publique ?
+* script de bootstrap (user-data)
+* ...
+
+Notes : 
+
+Le user-data est exactement le même que celui utilisé par l'instance d'administration : il se contente d'installer ansible, de récupérer du code ansible dans un sous-répertoire de notre bucket S3, et de l'exécuter pour finaliser l'installation de l'instance (en l'occurrence, installer un serveur Apache et créer une page d'index contenant des méta-données).
+
+A l'instar de l'instance d'administration, le code ansible doit être déployé dans le bucket S3 avant de créer l'auto scaling group. Pour ce faire, procédez comme suit :
+
+    cd <terraform_repository>/common/s3/webservers
+    aws s3 sync . s3://<bucket_name>/webservers/   \
+        --exclude ".git/*"                         \
+        --exclude "*/.terraform/*"                 \
+        --delete
+
+
+### Définition de l'Auto Scaling Group (ASG)
+
+#### Target Group du Load Balancer
+L'Auto Scaling Group fait la jonction avec la Launch Configuration et le Target Group du Load Balancer que nous avons créé plus tôt. Son Listener **HTTPS:443** transfèrera les flux au Target Group qui contiendra un nombre d'instances EC2 compris entre le nombre minimum et maximum d'instances de l'auto scaling group.
+
+
+#### Fail Over
+L'ASG définit également un certain nombre de métriques que nous souhaitons voir remontés dans le service de monitoring Amazon CloudWatch, et précisera aussi que le mécanisme de 'health check' sera confié au Load Balancer.
+
+Si ce dernier constate qu'une instance ne répond pas comme attendu en HTTP:80/, ce dernier en informera l'Auto Scaling Group qui remplacera la ou les instances concernées.
+
+
+#### Scaling
+
+##### Scaling up
+Si le taux d'utilisation de la CPU dépasse en moyenne 50% pour l'ensemble de l'Auto Scaling Group sur 2 relevés CloudWatch consécutifs pris sur un interval de 2 minutes, alors une instance EC2 supplémentaire est ajoutée à l'Auto Scaling Group si le nombre maximum d'instances n'est pas encore atteint.
+
+##### Scaling down
+Si en revanche le taux d'utilisation de la CPU passe en-dessous des 10% pour l'ensemble de l'Auto Scaling Group (et mesuré 2 fois de suite avec un interval de temps de 2 minutes), alors l'Auto Scaling Group détruira une instance EC2 si le nombre minimum d'instances n'est pas encore atteint.
+
+
+### Notifications par email
+
+Notre Auto Scaling Group adressera un email aux souscripteurs du topic SNS créé préalablement (et identifié par la variable 'sns_topic') chaque fois qu'une nouvelle instance sera ajoutée ou supprimée.
+
+
+### Nom de domaine DNS
+
+Enfin, nous devons garder à l'esprit la finalité de cet exercice reste la mise en place d'un site web :)
+
+Nous créerons en conséquence un alias DNS (CNAME) qui pointera vers le Load-Balancer :
+
+Environment| DNS alias
+---:|---
+DEVELOPMENT|dev.\<domain_name\>
+TEST|tst.\<domain_name\>
+ACCEPTANCE|acc.\<domain_name\>
+PRODUCTION|www.\<domain_name\>
 
 
 ______________________________________________________________________________
@@ -234,10 +315,11 @@ ______________________________________________________________________________
 Si une ou plusieurs instances EC2 venait à dysfonctionner (ie. à ne plus répondre correctement aux requêtes http/80), le load-balancer en informerait l'auto-scaling group qui procéderait alors à son/leur remplacement.
 
 #### *Modus Operandi*
-sudo rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
-sudo yum install siege
+Depuis l'instance d'administration :
 
-siege -b -c 150 https://dev.codeascode.net/phpinfo.php
+    sudo rpm -ivh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+    sudo yum install siege
+    siege -b -c 150 https://dev.codeascode.net/phpinfo.php
 
 
 ### Scaling up et down
@@ -249,7 +331,7 @@ A l'inverse, si la moyenne de la consommation CPU des instances de l'auto-scalin
 Ces 2 alarmes définies et rattachées à l'auto-scaling group dans le service de monitoring CloudWatch. C'est ce service qui informera l'auto-scaling de la nécessité d'augmenter ou bien de réduire le nombre d'instances, et non le load-balancer comme ce fut le cas pour le fail-over. 
 
 #### *Modus Operandi*
-Se loguer sur les instances dev-webservers et lancer un
+Se loguer depuis l'instance d'admin sur l'adresse __IP privée(!)__ des instances webservers et exécuter en background la commande suivante qui devrait faire monter singificativement la charge CPU :
 
     yes > /dev/null &
     top
