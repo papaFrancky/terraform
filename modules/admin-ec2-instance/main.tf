@@ -36,12 +36,16 @@ data "aws_ami" "amazon_latest" {
     owners      = [ "amazon" ]
     filter {
         name    = "name"
-        values  = [ "amzn2-ami-*" ]
+        values  = [ "amzn2-ami-hvm*" ]
     }
     filter {
         name    = "virtualization-type"
         values  = [ "hvm" ]
     }
+    filter {
+        name   = "root-device-type"
+        values = ["ebs"]
+  }
 }
 
 # az1 public subnet
